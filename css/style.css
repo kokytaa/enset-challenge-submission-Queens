@@ -1,58 +1,139 @@
-/* Global Styles */
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&display=swap');
+
+/* Global */
 body {
-    background-color: #0e1117;
-    color: #a552be;
-    font-family: 'Courier New', Courier, monospace;
+    background-color: #0b0f1a;
+    color: #cdd6f4;
+    font-family: 'Share Tech Mono', 'Courier New', monospace;
+}
+
+/* Main app background */
+.stApp {
+    background: linear-gradient(135deg, #0b0f1a 0%, #0d1b2a 60%, #0f2044 100%);
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background-color: #0d1117;
+    border-right: 1px solid #00e5ff33;
 }
 
 /* Headers */
 h1, h2, h3 {
-    color: #963a88 !important;
-    text-shadow: 0 0 5px #90388a;
+    font-family: 'Orbitron', 'Courier New', monospace !important;
+    color: #00e5ff !important;
+    text-shadow: 0 0 8px #00e5ff88;
+    letter-spacing: 2px;
 }
 
-/* Streamlit Inputs */
+/* Labels */
+label, .stSelectbox label, .stTextInput label, .stTextArea label {
+    color: #89b4fa !important;
+    font-size: 13px;
+    letter-spacing: 1px;
+}
+
+/* Text Inputs */
 .stTextInput>div>div>input {
-    background-color: #000000;
-    color: hsl(304, 47%, 59%);
-    border: 1px solid hsl(304, 47%, 59%);
+    background-color: #0d1117;
+    color: #00e5ff;
+    border: 1px solid #00e5ff55;
+    border-radius: 4px;
+    font-family: 'Share Tech Mono', monospace;
 }
 
+.stTextInput>div>div>input:focus {
+    border-color: #00e5ff;
+    box-shadow: 0 0 6px #00e5ff44;
+}
+
+/* Text Areas */
 .stTextArea>div>div>textarea {
-    background-color: #000000;
-    color: hsl(304, 47%, 59%);
-    border: 1px solid hsl(304, 47%, 59%);
+    background-color: #0d1117;
+    color: #cdd6f4;
+    border: 1px solid #00e5ff55;
+    border-radius: 4px;
+    font-family: 'Share Tech Mono', monospace;
 }
 
+.stTextArea>div>div>textarea:focus {
+    border-color: #00e5ff;
+    box-shadow: 0 0 6px #00e5ff44;
+}
+
+/* Selectbox */
 .stSelectbox>div>div>div {
-    background-color: #000000;
-    color: hsl(304, 47%, 59%);
+    background-color: #0d1117;
+    color: #00e5ff;
+    border: 1px solid #00e5ff55;
 }
 
 /* Buttons */
 .stButton>button {
-    background-color: #000000;
-    color: hsl(304, 47%, 59%);
-    border: 1px solid hsl(304, 47%, 59%);
-    transition: all 0.3s ease;
+    background-color: transparent;
+    color: #00e5ff;
+    border: 1px solid #00e5ff;
+    border-radius: 4px;
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 1px;
+    transition: all 0.25s ease;
 }
 
 .stButton>button:hover {
-    background-color: hsl(304, 47%, 59%);
-    color: #000000;
-    box-shadow: 0 0 10px hsl(304, 47%, 59%);
+    background-color: #00e5ff;
+    color: #0b0f1a;
+    box-shadow: 0 0 14px #00e5ffaa;
+}
+
+/* Primary button */
+.stButton>button[kind="primary"] {
+    border-color: #39ff14;
+    color: #39ff14;
+}
+
+.stButton>button[kind="primary"]:hover {
+    background-color: #39ff14;
+    color: #0b0f1a;
+    box-shadow: 0 0 14px #39ff1488;
+}
+
+/* Divider */
+hr {
+    border-color: #00e5ff22;
+}
+
+/* Info / Success / Warning boxes */
+.stAlert {
+    background-color: #0d1b2a;
+    border-left: 3px solid #00e5ff;
+    color: #cdd6f4;
 }
 
 /* Console Output */
 .console-box {
-    background-color: #1e1e1e;
-    border: 1px solid hsl(304, 47%, 59%);
-    padding: 15px;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 14px;
-    color: #d4d4d4;
+    background-color: #090d14;
+    border: 1px solid #00e5ff44;
+    border-left: 3px solid #00e5ff;
+    border-radius: 6px;
+    padding: 16px;
+    font-family: 'Share Tech Mono', 'Courier New', monospace;
+    font-size: 13px;
+    color: #a6e3a1;
     white-space: pre-wrap;
     max-height: 500px;
     overflow-y: auto;
-    line-height: 1.5;
+    line-height: 1.7;
+    box-shadow: 0 0 20px #00e5ff11;
+}
+
+/* Scrollbar */
+.console-box::-webkit-scrollbar {
+    width: 5px;
+}
+.console-box::-webkit-scrollbar-track {
+    background: #0d1117;
+}
+.console-box::-webkit-scrollbar-thumb {
+    background: #00e5ff44;
+    border-radius: 4px;
 }

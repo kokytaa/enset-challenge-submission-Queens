@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+from brain import PwnGPTBrain 
 
 # --- Page Config ---
 st.set_page_config(
@@ -7,6 +8,15 @@ st.set_page_config(
     page_icon="🛡️",
     layout="wide"
 )
+
+def load_css():
+    try:
+        with open("css/style.css") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    except FileNotFoundError:
+        pass
+ 
+load_css()
 
 # --- Helper ---
 def save_uploaded_files(uploaded_files, target_dir="uploads"):
@@ -67,11 +77,22 @@ if start_btn:
         st.success(f"✅ {len(file_paths)} file(s) uploaded.")
 
     # Simulate agent call (brain.py not connected yet)
+    # st.session_state.logs.append(f"Challenge: {challenge_name}")
+    # st.session_state.logs.append(f"Category: {category}")
+    # st.session_state.logs.append(f"Description received. Waiting for agent...")
+
+    # st.info("🔄 Agent initialized. (Brain integration coming next commit.)")
+
     st.session_state.logs.append(f"Challenge: {challenge_name}")
     st.session_state.logs.append(f"Category: {category}")
-    st.session_state.logs.append(f"Description received. Waiting for agent...")
-
-    st.info("🔄 Agent initialized. (Brain integration coming next commit.)")
+    st.session_state.logs.append(f"Analyzing challenge...")
+ 
+    with st.spinner("Agent is thinking..."):
+        brain = PwnGPTBrain()
+        response = brain.solve(challenge_name, description, hints)
+ 
+    st.session_state.logs.append(f"Agent Response:\n{response}")
+ 
 
 # --- Console ---
 st.markdown("### 🧠 Console")

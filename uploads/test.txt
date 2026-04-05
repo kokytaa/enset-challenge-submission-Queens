@@ -1,0 +1,5 @@
+Challenge: Web Intrusion 101
+Difficulty: Easy
+Description: This is a basic web challenge to test input validation.
+Hint: Try simple SQL injection like ' OR '1'='1
+Expected Flag: CTF{simple_test_flag}

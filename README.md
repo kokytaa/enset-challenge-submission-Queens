@@ -1,8 +1,8 @@
 # 🛡️ PwnGPT: AI CTF Assistant (MVP)
 
 **By**
-Fenjiro wiam
-Kawtar Khallouf
+Khallouf Kawtar and
+Fenjiro Wiam
 
 ---
 
