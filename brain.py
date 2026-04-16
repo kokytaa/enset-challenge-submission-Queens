@@ -143,7 +143,7 @@ class PwnGPTBrain:
              state['tool_output'] = "No files provided. Relying on description."
         
         return state
-     def run_expert(self, persona: str, challenge_data: Dict):
+    def run_expert(self, persona: str, challenge_data: Dict):
         """
         Helper to run a single specialized expert agent.
         """

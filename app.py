@@ -177,3 +177,187 @@ def run_agent_step():
     
     with tab_artifacts:
         artifacts_placeholder = st.empty()
+# Function to render logs
+    def format_log(line: str) -> str:
+        line_esc = line.replace("<", "&lt;").replace(">", "&gt;") # Basic HTML escaping
+        
+        if line.startswith("Thought:"):
+            return f'<div class="log-thought">{line_esc}</div>'
+        elif line.startswith("Ran command:") or line.startswith("Scraped URL:"):
+            return f'<div class="log-command">> {line_esc}</div>'
+        elif line.startswith("Observing challenge:"):
+             return f'<div class="log-obs">{line_esc}</div>'
+        elif "Expert Panel" in line or "Expert Consensus" in line:
+             return f'<div class="log-expert">{line_esc}</div>'
+        elif "SUCCESS:" in line or "✅" in line:
+            return f'<div class="log-success">{line_esc}</div>'
+        elif "⛔" in line or "⚠️" in line or "Error" in line:
+            return f'<div class="log-error">{line_esc}</div>'
+        elif "✋" in line:
+            return f'<div class="log-warning">{line_esc}</div>'
+        else:
+            return f'<div>{line_esc}</div>'
+
+    def render_logs():
+        formatted_lines = [format_log(log) for log in st.session_state.logs]
+        console_html = "".join(formatted_lines)
+        console_placeholder.markdown(f'<div class="console-box">{console_html}</div>', unsafe_allow_html=True)
+
+    def render_artifacts():
+        # A bit hacky to re-render buttons in loop, but Streamlit handles it okay mostly
+        # We will just list files here for speed, buttons might flicker or break in loop
+        # So we just listing names in loop, buttons appear when paused/stopped
+        sandbox_path = SANDBOX_PATH
+        if os.path.exists(sandbox_path):
+            files = []
+            for root, dirs, filenames in os.walk(sandbox_path):
+                for f in filenames:
+                    files.append(os.path.relpath(os.path.join(root, f), sandbox_path))
+            
+            if files:
+                file_list = "\n".join([f"- {f}" for f in files])
+                artifacts_placeholder.markdown(f"**Current Files:**\n{file_list}")
+            else:
+                 artifacts_placeholder.info("No artifacts yet.")
+
+    # Render initial state
+    render_logs()
+    render_artifacts()
+    
+    try:
+        # Resume from current state
+        # Note: If we just approved an action, current_graph_state has 'approval_status': 'GRANTED'
+        # The brain logic will see this and pass through observe/reason to execute 'act'
+        
+        for event in app.stream(st.session_state.current_graph_state):
+            for node, state in event.items():
+                # Update global state
+                st.session_state.current_graph_state = state
+                
+                # Update logs
+                if state.get('messages'):
+                    st.session_state.logs = state['messages']
+                
+                # Check for Flag
+                if state.get('flag_found'):
+                    st.session_state.flag = state['flag_found']
+                    st.session_state.running = False
+                    render_logs()
+                    render_artifacts()
+                    st.rerun() # Trigger success UI
+                    return
+                
+                # Check for Approval Request
+                if state.get('approval_status') == "REQUESTED":
+                    st.session_state.waiting_for_approval = True
+                    render_logs()
+                    render_artifacts()
+                    st.rerun() # Trigger Approval UI
+                    return 
+
+                # Live Update Console
+                render_logs()
+                render_artifacts()
+                
+                # Check if Agent decided to finish or errored out
+                # We inspect the messages or the last action
+                current_action = state.get('current_action', {}).get('action')
+                if current_action == "finish":
+                     st.session_state.running = False
+                     return
+                
+                if "Reasoning Error" in str(state.get('messages', [])[-1]):
+                     st.error("Agent encountered a critical error. Stopping.")
+                     st.session_state.running = False
+                     return
+
+                time.sleep(0.1) # Small cosmetic delay
+                
+    except Exception as e:
+        st.error(f"Agent Crashed: {str(e)}")
+        st.session_state.running = False
+
+# Auto-run if running and not waiting
+if st.session_state.running and not st.session_state.waiting_for_approval:
+    run_agent_step()
+
+# --- Display Console & Artifacts ---
+# If we are NOT running (waiting or finished), we still need to show the logs/artifacts
+if not st.session_state.running or st.session_state.waiting_for_approval:
+    
+    tab_console, tab_artifacts = st.tabs(["🧠 Thinking Console", "📂 Artifact Gallery"])
+    
+    with tab_console:
+        if st.session_state.logs:
+            # We recreate the log rendering here for static display
+            formatted_lines = []
+            for line in st.session_state.logs:
+                line_esc = line.replace("<", "&lt;").replace(">", "&gt;")
+                if line.startswith("Thought:"):
+                    formatted_lines.append(f'<div class="log-thought">{line_esc}</div>')
+                elif line.startswith("Ran command:") or line.startswith("Scraped URL:"):
+                    formatted_lines.append(f'<div class="log-command">> {line_esc}</div>')
+                elif line.startswith("Observing challenge:"):
+                     formatted_lines.append(f'<div class="log-obs">{line_esc}</div>')
+                elif "SUCCESS:" in line or "✅" in line:
+                    formatted_lines.append(f'<div class="log-success">{line_esc}</div>')
+                elif "⛔" in line or "⚠️" in line or "Error" in line:
+                    formatted_lines.append(f'<div class="log-error">{line_esc}</div>')
+                elif "✋" in line:
+                    formatted_lines.append(f'<div class="log-warning">{line_esc}</div>')
+                else:
+                    formatted_lines.append(f'<div>{line_esc}</div>')
+            console_html = "".join(formatted_lines)
+            st.markdown(f'<div class="console-box">{console_html}</div>', unsafe_allow_html=True)
+        else:
+             st.info("Agent not started yet.")
+
+    with tab_artifacts:
+        st.markdown("### 📦 Sandbox Artifacts")
+        sandbox_path = SANDBOX_PATH
+        if os.path.exists(sandbox_path):
+            files = []
+            for root, dirs, filenames in os.walk(sandbox_path):
+                for f in filenames:
+                    files.append(os.path.relpath(os.path.join(root, f), sandbox_path))
+            
+            if files:
+                for f in files:
+                    col_file, col_dl = st.columns([4, 1])
+                    with col_file:
+                        st.code(f, language="text")
+                    with col_dl:
+                        file_full_path = os.path.join(sandbox_path, f)
+                        try:
+                            with open(file_full_path, "rb") as dl_file:
+                                st.download_button(
+                                    label="⬇️",
+                                    data=dl_file,
+                                    file_name=os.path.basename(f),
+                                    key=f"dl_{f}"
+                                )
+                        except Exception as e:
+                            st.error("Error reading file")
+            else:
+                st.info("No artifacts found in workspace.")
+        else:
+            st.warning("Sandbox workspace not initialized.")
+
+# Approval UI Overlay
+if st.session_state.waiting_for_approval:
+    action = st.session_state.current_graph_state.get('current_action', {})
+    st.warning(f"⚠️ **HIGH RISK ACTION DETECTED**")
+    st.code(f"Action: {action.get('action')}\nCommand: {action.get('argument')}", language="bash")
+    
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("✅ APPROVE ACTION", type="primary"):
+            st.session_state.current_graph_state['approval_status'] = "GRANTED"
+            st.session_state.waiting_for_approval = False
+            st.rerun() # Will trigger run_agent_step via the 'if running' block
+            
+    with col_b:
+        if st.button("🛑 DENY ACTION"):
+            st.session_state.current_graph_state['approval_status'] = "DENIED"
+            st.session_state.waiting_for_approval = False
+            st.rerun()
