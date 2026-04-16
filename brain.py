@@ -451,3 +451,4 @@ class PwnGPTBrain:
                 continue
         
         return state
+    
