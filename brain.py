@@ -143,4 +143,174 @@ class PwnGPTBrain:
              state['tool_output'] = "No files provided. Relying on description."
         
         return state
-    
+     def run_expert(self, persona: str, challenge_data: Dict):
+        """
+        Helper to run a single specialized expert agent.
+        """
+        prompt = f"""
+        {SYSTEM_PROMPT}
+        
+        YOU ARE SPECIALIZED SUB-AGENT: {persona}
+        
+        Task: Analyze the CTF Challenge '{challenge_data['name']}'.
+        Description: {challenge_data['description']}
+        Flag Format: {challenge_data.get('flag_format', 'CTF{...}')}
+        Files Available: {challenge_data['files_info']}
+        
+        Your Goal: specific to your specialization, identify potential vectors and a recommended first step.
+        Be concise. Focus ONLY on your domain.
+        """
+        try:
+             # Clone model for thread safety if needed, but Gemini client is thread-safe usually.
+             # We create a new generation config to ensure independence if we wanted to.
+             response = self._safe_generate_content(prompt)
+             return f"### {persona}\n{response.text}"
+        except Exception as e:
+             return f"### {persona}\n[Error: {e}]"
+
+    def expert_consensus_node(self, state: AgentState):
+        """
+        Spawns 3 parallel sub-agents to debate the strategy, then synthesizes a consensus.
+        """
+        # Skip if not the first step or already done
+        if any("Expert Consensus Strategy" in msg for msg in state.get('messages', [])):
+             return state
+             
+        if state.get('approval_status') == "GRANTED":
+             return state
+
+        state['current_step'] = "Expert Consensus"
+        
+        # Prepare Data
+        challenge_data = {
+            "name": state['challenge_name'],
+            "description": state['challenge_description'],
+            "flag_format": state.get('flag_format', 'CTF{...}'),
+            "files_info": state.get('tool_output', '')
+        }
+        
+        personas = [
+            "🕵️ Forensics Investigator (Focus: Metadata, File Formats, Steganography)",
+            "🕸️ Web Exploitation Specialist (Focus: Source Code, HTTP Headers, Injection)",
+            "⚙️ Reverse Engineer (Focus: Binary Analysis, Disassembly, Logic Flows)"
+        ]
+        
+        # 1. Parallel Execution
+        expert_results = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            future_to_persona = {executor.submit(self.run_expert, p, challenge_data): p for p in personas}
+            for future in concurrent.futures.as_completed(future_to_persona):
+                expert_results.append(future.result())
+        
+        full_debate = "\n\n".join(expert_results)
+        state['expert_outputs'] = {p: r for p, r in zip(personas, expert_results)} # Store raw if needed
+        
+        # 2. Moderator Synthesis
+        moderator_prompt = f"""
+        {SYSTEM_PROMPT}
+
+        Task: You are the Lead Strategist. Synthesize the following expert reports into a single, cohesive Execution Plan.
+        Flag Format: {state.get('flag_format', 'CTF{...}')}
+        
+        [EXPERT REPORTS]
+        {full_debate}
+        
+        Decide the single most likely path to the flag.
+        Provide a "Joint Strategy" and the immediate next step.
+        """
+        
+        try:
+            resp = self._safe_generate_content(moderator_prompt)
+            consensus = resp.text
+            final_msg = f"🧠 **Expert Consensus Strategy**\n\n{consensus}\n\n---\n*Detailed Reports:*\n{full_debate}"
+            state['messages'].append(final_msg)
+        except Exception as e:
+            state['messages'].append(f"Expert Consensus Error: {e}")
+            
+        return state
+
+    def reason_node(self, state: AgentState):
+        """
+        Ask Gemini what to do next based on history and tool output.
+        """
+        # Pass-through if we are resuming an approved action
+        if state.get('approval_status') == "GRANTED":
+             state['messages'].append("✅ Permission granted. Resuming execution...")
+             return state
+
+        state['current_step'] = "Reasoning"
+        state['approval_status'] = "NONE" # Reset approval status on new reasoning
+        
+        flag_fmt = state.get('flag_format', 'CTF{')
+        hints = state.get('hints', '')
+        
+        # Perform RAG Search based on challenge name + description + recent output
+        # Search query: challenge name keywords + critical errors or findings
+        search_query = f"{state['challenge_name']} {state['challenge_description']} {state['tool_output'][-200:] if state['tool_output'] else ''}"
+        rag_context = self.toolkit.rag.search(search_query)
+
+        prompt_parts = [
+             f"""
+        {SYSTEM_PROMPT}
+
+        Task: {state['challenge_name']}
+        Description: {state['challenge_description']}
+        Hints: {hints}
+        Flag Format: {flag_fmt}
+        
+        [RAG KNOWLEDGE BASE]
+        {rag_context}
+        
+        Recent Tool Output:
+        {state['tool_output']}
+        
+        History:
+        {json.dumps(state['messages'][-3:])}
+
+        Decide the next single action. Return ONLY a JSON object with:
+        {{
+            "thought": "Your reasoning here",
+            "action": "command" OR "web" OR "screenshot" OR "finish",
+            "argument": "The command to run OR the URL to scrape/screenshot OR the flag"
+        }}
+        """
+        ]
+        
+        # Check if the last tool output was a screenshot image path
+        if "[SCREENSHOT]" in state['tool_output']:
+             # Extract path
+             try:
+                 import PIL.Image
+                 path = state['tool_output'].split("[SCREENSHOT]: ")[1].strip()
+                 if os.path.exists(path):
+                     img = PIL.Image.open(path)
+                     prompt_parts.append(img)
+                     prompt_parts.append("\n[System: The above image is the screenshot of the target URL.]")
+             except Exception as e:
+                 prompt_parts.append(f"\n[Error loading screenshot: {e}]")
+
+        try:
+            response = self._safe_generate_content(prompt_parts)
+            text = response.text.replace("```json", "").replace("```", "").strip()
+            
+            # Sanitization hack
+            try:
+                decision = json.loads(text)
+            except json.JSONDecodeError:
+                # Try raw string escape fix
+                import re
+                text_fixed = text.replace("\\", "\\\\") 
+                text_fixed = text_fixed.replace("\\\\\\\\", "\\\\") 
+                try:
+                    decision = json.loads(text_fixed)
+                except:
+                     decision = {"thought": "JSON Parse Error, trying manual fix.", "action": "finish", "argument": "JSON Error"}
+            
+            state['messages'].append(f"Thought: {decision.get('thought', 'No thought')}")
+            state['current_action'] = decision
+            
+        except Exception as e:
+             state['messages'].append(f"Reasoning Error: {str(e)}")
+             state['current_action'] = {"action": "finish", "argument": f"Error in reasoning: {str(e)}"}
+        
+        return state
