@@ -1,0 +1,8 @@
+streamlit
+google-generativeai
+langgraph>=0.0.10
+langchain
+beautifulsoup4
+requests
+pwntools
+playwright

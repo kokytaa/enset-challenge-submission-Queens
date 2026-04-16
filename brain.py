@@ -451,4 +451,50 @@ class PwnGPTBrain:
                 continue
         
         return state
-    
+    def check_success(self, state: AgentState):
+        if state.get('approval_status') == "REQUESTED":
+            return END
+        
+        # Stop if user denied
+        if state.get('approval_status') == "DENIED":
+             return END
+
+        if state['flag_found']:
+            return END
+        
+        # So we can just return END here if waiting? No, that ends the graph.
+        # We want to loop back to 'reason' usually.
+        # But if 'approval_requested', we want to PAUSE.
+        # LangGraph doesn't have a native "Pause" status that saves to disk automatically in this simple setup.
+        # We handle it by `app.py` seeing the status and breaking execution.
+        # Next time `app.py` runs, it calls `app.invoke()` or `stream()` with updated state.
+        
+        if len(state['messages']) > 20:
+             return END
+             
+        return "reason"
+
+    def generate_writeup(self, state: AgentState) -> str:
+        """
+        Generates a detailed write-up of the CTF solution based on the message history.
+        """
+        history = json.dumps(state['messages'])
+        prompt = f"""
+        {SYSTEM_PROMPT}
+        
+        Task: Generate a professional CTF Write-up for the challenge '{state['challenge_name']}'.
+        
+        Challenge Description: {state['challenge_description']}
+        Flag Found: {state.get('flag_found', 'N/A')}
+        
+        Execution History:
+        {history}
+        
+        Output Format: Markdown. Include 'Challenge Overview', 'Reconnaissance', 'Exploitation/Solution', and 'The Flag'.
+        """
+        try:
+            response = self._safe_generate_content(prompt)
+            return response.text
+        except Exception as e:
+            return f"Error generating write-up: {str(e)}"
+
