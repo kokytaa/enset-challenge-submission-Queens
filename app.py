@@ -68,3 +68,30 @@ def reset_env():
     st.session_state.running = False
     st.session_state.current_graph_state = None
     st.session_state.waiting_for_approval = False
+    # --- Sidebar Inputs ---
+with st.sidebar:
+    st.image("PwnGPT.png", width=300)
+    st.title("PwnGPT Config")
+    
+    # Theme Toggle Button
+    theme_icon = "🌙" if st.session_state.theme == "dark" else "☀️"
+    theme_label = "Light Mode" if st.session_state.theme == "dark" else "Dark Mode"
+    
+    if st.button(f"{theme_icon} {theme_label}", key="theme_toggle"):
+        toggle_theme()
+        st.rerun()
+    
+    st.divider()
+    
+    challenge_name = st.text_input("Challenge Name", "Web Intrusion 101")
+    category = st.selectbox("Category", ["WEB", "PWN", "REV", "DFIR", "OSINT", "MISC", "CRYPTO"])
+    flag_format = st.text_input("Flag Format (regex or prefix)", "CTF{")
+    
+    uploaded_files = st.file_uploader("Upload Challenge Files/Screenshots", accept_multiple_files=True)
+    
+    start_btn = st.button("🚀 INITIALIZE AGENT", type="primary")
+    
+    st.divider()
+    if st.button("🗑️ RESET ENVIRONMENT", type="secondary"):
+        reset_env()
+        st.rerun()
