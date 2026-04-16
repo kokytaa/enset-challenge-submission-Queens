@@ -66,3 +66,31 @@ class PwnGPTBrain:
              self.model = genai.GenerativeModel('gemini-3-pro-preview')
         
         self.graph = self._build_graph()
+        
+    def _safe_generate_content(self, prompt, retries=3):
+        """
+        Wrapper to handle 429 API limits with exponential backoff.
+        """
+        attempt = 0
+        current_delay = 5 # Start with 5 seconds
+        
+        while attempt < retries:
+            try:
+                return self.model.generate_content(prompt)
+            except Exception as e:
+                error_str = str(e)
+                if "429" in error_str or "quota" in error_str.lower():
+                    attempt += 1
+                    if attempt >= retries:
+                         raise e
+                    
+                    # Add jitter
+                    sleep_time = current_delay + random.uniform(0, 2)
+                    print(f"⚠️ API Quota hit. Sleeping {sleep_time:.2f}s (Attempt {attempt}/{retries})...")
+                    time.sleep(sleep_time)
+                    current_delay *= 2 # Exponential backoff
+                else:
+                    # Non-retryable error
+                    raise e
+                    
+        raise Exception("Max retries exceeded")

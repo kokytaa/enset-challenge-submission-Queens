@@ -53,3 +53,18 @@ def reset_env():
         subprocess.run(["docker", "rm", "-f", "pwngpt-session"], capture_output=True)
     except Exception as e:
         print(f"Failed to kill docker: {e}")
+ # 2. Clear Sandbox Files
+    sandbox_path = SANDBOX_PATH
+    if os.path.exists(sandbox_path):
+        try:
+            shutil.rmtree(sandbox_path)
+            os.makedirs(sandbox_path) # Recreate empty
+        except Exception as e:
+            st.error(f"Failed to clear sandbox: {e}")
+    
+    # 3. Clear session
+    st.session_state.logs = []
+    st.session_state.flag = None
+    st.session_state.running = False
+    st.session_state.current_graph_state = None
+    st.session_state.waiting_for_approval = False
