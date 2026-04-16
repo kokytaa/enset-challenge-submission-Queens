@@ -38,3 +38,31 @@ If you encounter a roadblock, analyze the error and pivot your strategy.
 
 Your Goal: Find the flag in the specified format.
 """
+# --- State Definition ---
+class AgentState(TypedDict):
+    challenge_name: str
+    challenge_description: str
+    hints: str
+    files: List[str]
+    messages: List[str] # Log of thoughts/actions
+    current_step: str
+    tool_output: str
+    flag_found: Union[str, None]
+    current_action: Dict[str, Any] # The planned action
+    approval_status: str # "NONE", "REQUESTED", "GRANTED", "DENIED"
+    flag_format: str # e.g. "CTF{"
+    expert_outputs: Dict[str, str] # Sub-agent outputs
+
+# --- Nodes ---
+
+class PwnGPTBrain:
+    def __init__(self, upload_dir: str):
+        self.toolkit = CTFToolkit(workspace_dir=upload_dir)
+        try:
+             # Try specific version found in list_models
+             self.model = genai.GenerativeModel('gemini-3-flash-preview')
+        except:
+             # Fallback
+             self.model = genai.GenerativeModel('gemini-3-pro-preview')
+        
+        self.graph = self._build_graph()
