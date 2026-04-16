@@ -95,3 +95,85 @@ with st.sidebar:
     if st.button("🗑️ RESET ENVIRONMENT", type="secondary"):
         reset_env()
         st.rerun()
+    # --- Main Layout ---
+col1, col2 = st.columns([3, 1])
+
+with col1:
+    st.markdown("# 🛡️ PwnGPT: Agentic CTF Solver")
+    description = st.text_area("Challenge Description / Briefing", height=150, 
+                               placeholder="Paste the challenge text or clue here...")
+    hints = st.text_area("Hints (Optional)", height=100, placeholder="Enter any provided hints here...")
+
+# --- Session State Management ---
+if "logs" not in st.session_state:
+    st.session_state.logs = []
+if "running" not in st.session_state:
+    st.session_state.running = False
+if "flag" not in st.session_state:
+    st.session_state.flag = None
+if "current_graph_state" not in st.session_state:
+    st.session_state.current_graph_state = None
+if "waiting_for_approval" not in st.session_state:
+    st.session_state.waiting_for_approval = False
+
+# --- Logic Flow ---
+if start_btn:
+    st.session_state.running = True
+    st.session_state.logs = []
+    st.session_state.flag = None
+    st.session_state.waiting_for_approval = False
+    st.session_state.current_graph_state = None
+    
+    with st.spinner("Initializing Toolkit (Pulling Docker Image if needed, this may take a minute)..."):
+        # Save files
+        file_paths = []
+        upload_dir_path = SANDBOX_PATH
+        if not os.path.exists(upload_dir_path):
+            os.makedirs(upload_dir_path)
+            
+        if uploaded_files:
+            file_paths, _ = save_uploaded_files(uploaded_files, target_dir=upload_dir_path)
+        
+        # Init Brain
+        try:
+            brain = PwnGPTBrain(upload_dir=upload_dir_path)
+            
+            # Initial State
+            initial_state = {
+                "challenge_name": challenge_name,
+                "challenge_description": description,
+                "hints": hints,
+                "files": file_paths,
+                "messages": [],
+                "current_step": "Start",
+                "tool_output": "",
+                "flag_found": None,
+                "current_action": {},
+                "approval_status": "NONE",
+                "flag_format": flag_format
+            }
+            st.session_state.current_graph_state = initial_state
+        except RuntimeError as e:
+            st.error(f"Initialization Failed: {str(e)}")
+            st.session_state.running = False
+
+def run_agent_step():
+    """
+    Runs the agent loop until it finishes or hits an approval request.
+    Using placeholders to avoid full page reruns during streaming.
+    """
+    if not st.session_state.current_graph_state:
+        return
+
+    upload_dir_path = SANDBOX_PATH
+    brain = PwnGPTBrain(upload_dir=upload_dir_path)
+    app = brain.graph
+    
+    # Placeholder structure
+    tab_console, tab_artifacts = st.tabs(["🧠 Thinking Console", "📂 Artifact Gallery"])
+    
+    with tab_console:
+        console_placeholder = st.empty()
+    
+    with tab_artifacts:
+        artifacts_placeholder = st.empty()
