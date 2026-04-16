@@ -33,6 +33,7 @@ def load_css():
     except FileNotFoundError:
         st.warning(f"CSS file '{css_file}' not found. Using default styles.")
 load_css()
+
 # --- Helper Functions ---
 def save_uploaded_files(uploaded_files, target_dir="uploads"):
     if not os.path.exists(target_dir):
@@ -53,7 +54,8 @@ def reset_env():
         subprocess.run(["docker", "rm", "-f", "pwngpt-session"], capture_output=True)
     except Exception as e:
         print(f"Failed to kill docker: {e}")
- # 2. Clear Sandbox Files
+###
+    # 2. Clear Sandbox Files
     sandbox_path = SANDBOX_PATH
     if os.path.exists(sandbox_path):
         try:
@@ -68,10 +70,16 @@ def reset_env():
     st.session_state.running = False
     st.session_state.current_graph_state = None
     st.session_state.waiting_for_approval = False
-    # --- Sidebar Inputs ---
+
+# --- Sidebar Inputs ---
 with st.sidebar:
     st.image("PwnGPT.png", width=300)
     st.title("PwnGPT Config")
+    
+    if "app_mode" not in st.session_state:
+        st.session_state.app_mode = "🧑‍🎓 Student (Solver)"
+        
+    st.radio("Mode de l'application", ["🧑‍🎓 Student (Solver)", "🧑‍🏫 Professor (Generator)"], key="app_mode")
     
     # Theme Toggle Button
     theme_icon = "🌙" if st.session_state.theme == "dark" else "☀️"
@@ -83,19 +91,56 @@ with st.sidebar:
     
     st.divider()
     
-    challenge_name = st.text_input("Challenge Name", "Web Intrusion 101")
-    category = st.selectbox("Category", ["WEB", "PWN", "REV", "DFIR", "OSINT", "MISC", "CRYPTO"])
-    flag_format = st.text_input("Flag Format (regex or prefix)", "CTF{")
-    
-    uploaded_files = st.file_uploader("Upload Challenge Files/Screenshots", accept_multiple_files=True)
-    
-    start_btn = st.button("🚀 INITIALIZE AGENT", type="primary")
+    if st.session_state.app_mode == "🧑‍🎓 Student (Solver)":
+        challenge_name = st.text_input("Challenge Name", "Web Intrusion 101")
+        category = st.selectbox("Category", ["WEB", "PWN", "REV", "DFIR", "OSINT", "MISC", "CRYPTO"])
+        flag_format = st.text_input("Flag Format (regex or prefix)", "CTF{")
+        
+        uploaded_files = st.file_uploader("Upload Challenge Files/Screenshots", accept_multiple_files=True)
+        
+        start_btn = st.button("🚀 INITIALIZE AGENT", type="primary")
+    else:
+        st.info("Le mode Professeur est actif. Utilisez la fenêtre principale.")
+        start_btn = False
     
     st.divider()
     if st.button("🗑️ RESET ENVIRONMENT", type="secondary"):
         reset_env()
         st.rerun()
-    # --- Main Layout ---
+##
+# --- Main Layout ---
+if st.session_state.app_mode == "🧑‍🏫 Professor (Generator)":
+    st.markdown("# 🧠 CTF Challenge Generator")
+    teacher_prompt = st.text_area("Que voulez-vous générer ?", height=150, 
+                                  placeholder="Ex: crée un challenge web niveau moyen sur SQL injection...")
+    
+    if st.button("🚀 GENERATE CHALLENGE", type="primary"):
+        with st.spinner("Génération du challenge en cours (peut prendre une minute)..."):
+            from generator_agent import CTFGeneratorAgent
+            generator = CTFGeneratorAgent(workspace_dir=SANDBOX_PATH)
+
+            result = generator.generate_challenge(teacher_prompt)
+            
+            if "error" in result:
+                st.error(f"Erreur: {result['error']}")
+            else:
+                st.success("Challenge généré avec succès !")
+                st.markdown(f"### {result.get('challenge_name', 'Challenge')}")
+                st.markdown(f"**Catégorie:** {result.get('category', 'N/A')}")
+                st.markdown("#### Description étudiante")
+                st.info(result.get('description', ''))
+                st.markdown("#### Flag")
+                st.code(result.get('flag', ''), language="text")
+                
+                saved_files = result.get('saved_files', [])
+                if saved_files:
+                    st.markdown("#### Fichiers générés")
+                    for fname in saved_files:
+                        file_path = os.path.join(SANDBOX_PATH, fname)
+                        with open(file_path, "rb") as f:
+                            st.download_button(label=f"⬇️ Télécharger {fname}", data=f, file_name=fname, key=fname)
+    st.stop()
+
 col1, col2 = st.columns([3, 1])
 
 with col1:
@@ -177,7 +222,8 @@ def run_agent_step():
     
     with tab_artifacts:
         artifacts_placeholder = st.empty()
-# Function to render logs
+
+    # Function to render logs
     def format_log(line: str) -> str:
         line_esc = line.replace("<", "&lt;").replace(">", "&gt;") # Basic HTML escaping
         
@@ -361,7 +407,8 @@ if st.session_state.waiting_for_approval:
             st.session_state.current_graph_state['approval_status'] = "DENIED"
             st.session_state.waiting_for_approval = False
             st.rerun()
-    # --- Success & Feedback Loop ---
+####
+# --- Success & Feedback Loop ---
 if st.session_state.flag:
     st.markdown(f"""
     <div class="success-box">

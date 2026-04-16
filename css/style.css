@@ -1,139 +1,164 @@
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&display=swap');
 
-/* Global */
+/* ===== GLOBAL ===== */
+:root {
+    --bg: #0b0f1a;
+    --bg2: #0d1b2a;
+    --accent: #00e5ff;
+    --accent2: #39ff14;
+    --text: #00e5ff;
+    --muted: #89b4fa;
+}
+
 body {
-    background-color: #0b0f1a;
-    color: #cdd6f4;
-    font-family: 'Share Tech Mono', 'Courier New', monospace;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
 }
 
-/* Main app background */
+/* App background */
 .stApp {
-    background: linear-gradient(135deg, #0b0f1a 0%, #0d1b2a 60%, #0f2044 100%);
+    background: linear-gradient(135deg, var(--bg) 0%, var(--bg2) 50%, #0f2044 100%);
 }
 
-/* Sidebar */
+/* ===== SIDEBAR (glass effect) ===== */
 section[data-testid="stSidebar"] {
-    background-color: #0d1117;
-    border-right: 1px solid #00e5ff33;
+    background: rgba(13, 17, 23, 0.75);
+    backdrop-filter: blur(10px);
+    border-right: 1px solid rgba(0, 229, 255, 0.15);
 }
 
-/* Headers */
+/* ===== HEADERS ===== */
 h1, h2, h3 {
-    font-family: 'Orbitron', 'Courier New', monospace !important;
-    color: #00e5ff !important;
-    text-shadow: 0 0 8px #00e5ff88;
+    font-family: 'Orbitron', monospace !important;
+    color: var(--accent) !important;
+    text-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
     letter-spacing: 2px;
 }
 
-/* Labels */
-label, .stSelectbox label, .stTextInput label, .stTextArea label {
-    color: #89b4fa !important;
+/* ===== LABELS ===== */
+label {
+    color: var(--muted) !important;
     font-size: 13px;
     letter-spacing: 1px;
 }
 
-/* Text Inputs */
-.stTextInput>div>div>input {
-    background-color: #0d1117;
-    color: #00e5ff;
-    border: 1px solid #00e5ff55;
-    border-radius: 4px;
-    font-family: 'Share Tech Mono', monospace;
-}
-
-.stTextInput>div>div>input:focus {
-    border-color: #00e5ff;
-    box-shadow: 0 0 6px #00e5ff44;
-}
-
-/* Text Areas */
+/* ===== INPUTS ===== */
+.stTextInput>div>div>input,
 .stTextArea>div>div>textarea {
-    background-color: #0d1117;
-    color: #cdd6f4;
-    border: 1px solid #00e5ff55;
-    border-radius: 4px;
+    background: rgba(13, 17, 23, 0.9);
+    color: var(--accent);
+    border: 1px solid rgba(0, 229, 255, 0.25);
+    border-radius: 8px;
+    padding: 10px;
+    transition: all 0.25s ease;
     font-family: 'Share Tech Mono', monospace;
 }
 
-.stTextArea>div>div>textarea:focus {
-    border-color: #00e5ff;
-    box-shadow: 0 0 6px #00e5ff44;
-}
+.stTextInput>div>div>input::placeholder,
+.stTextArea>div>div>textarea::placeholder {
+    color: rgba(0, 229, 255, 0.35);
 
-/* Selectbox */
+/* ===== SELECTBOX ===== */
 .stSelectbox>div>div>div {
-    background-color: #0d1117;
-    color: #00e5ff;
-    border: 1px solid #00e5ff55;
+    background: rgba(13, 17, 23, 0.9);
+    color: var(--accent);
+    border: 1px solid rgba(0, 229, 255, 0.25);
+    border-radius: 8px;
 }
 
-/* Buttons */
+/* ===== BUTTONS ===== */
 .stButton>button {
-    background-color: transparent;
-    color: #00e5ff;
-    border: 1px solid #00e5ff;
-    border-radius: 4px;
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 8px 14px;
+    transition: all 0.3s ease;
     font-family: 'Share Tech Mono', monospace;
     letter-spacing: 1px;
-    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 .stButton>button:hover {
-    background-color: #00e5ff;
-    color: #0b0f1a;
-    box-shadow: 0 0 14px #00e5ffaa;
+    background: var(--accent);
+    color: var(--bg);
+    box-shadow: 0 0 18px rgba(0, 229, 255, 0.6);
+    transform: translateY(-2px);
 }
 
 /* Primary button */
 .stButton>button[kind="primary"] {
-    border-color: #39ff14;
-    color: #39ff14;
+    border-color: var(--accent2);
+    color: var(--accent2);
 }
 
 .stButton>button[kind="primary"]:hover {
-    background-color: #39ff14;
-    color: #0b0f1a;
-    box-shadow: 0 0 14px #39ff1488;
+    background: var(--accent2);
+    color: var(--bg);
+    box-shadow: 0 0 18px rgba(57, 255, 20, 0.5);
 }
 
-/* Divider */
+/* ===== DIVIDER ===== */
 hr {
-    border-color: #00e5ff22;
+    border: none;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(0,229,255,0.3), transparent);
 }
 
-/* Info / Success / Warning boxes */
+/* ===== ALERT BOX ===== */
 .stAlert {
-    background-color: #0d1b2a;
-    border-left: 3px solid #00e5ff;
-    color: #cdd6f4;
+    background: rgba(13, 27, 42, 0.7);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    color: var(--text);
+    backdrop-filter: blur(6px);
 }
 
-/* Console Output */
+/* ===== CONSOLE ===== */
 .console-box {
-    background-color: #090d14;
-    border: 1px solid #00e5ff44;
+    background: rgba(9, 13, 20, 0.95);
+    border: 1px solid rgba(0, 229, 255, 0.25);
     border-left: 3px solid #00e5ff;
-    border-radius: 6px;
+    border-radius: 10px;
     padding: 16px;
-    font-family: 'Share Tech Mono', 'Courier New', monospace;
     font-size: 13px;
-    color: #a6e3a1;
     white-space: pre-wrap;
     max-height: 500px;
     overflow-y: auto;
-    line-height: 1.7;
-    box-shadow: 0 0 20px #00e5ff11;
+    box-shadow: 0 0 25px rgba(0, 229, 255, 0.08);
+    font-family: 'Share Tech Mono', monospace;
+    line-height: 1.6;
 }
 
-/* Scrollbar */
-.console-box::-webkit-scrollbar {
-    width: 5px;
+/* ===== TEXT COLORS (IMPORTANT) ===== */
+.console-box .info {
+    color: #00e5ff; /* cyan */
 }
-.console-box::-webkit-scrollbar-track {
-    background: #0d1117;
+
+.console-box .success {
+    color: #39ff14; /* green hacker */
 }
-.console-box::-webkit-scrollbar-thumb {
-    background: #00e5ff44;
-    border-radius: 4px;
+
+.console-box .warning {
+    color: #ffcc00; /* yellow */
 }
+
+.console-box .error {
+    color: #ff4d4d; /* red */
+}
+
+.console-box .muted {
+    color: #aab2c0; /* soft gray */
+}
+
+/* ===== SMALL ANIMATIONS ===== */
+.stApp {
+    animation: fadeIn 0.6s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.99); }
+    to { opacity: 1; transform: scale(1); }
+}}
