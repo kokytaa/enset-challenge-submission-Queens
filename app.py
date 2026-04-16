@@ -33,3 +33,23 @@ def load_css():
     except FileNotFoundError:
         st.warning(f"CSS file '{css_file}' not found. Using default styles.")
 load_css()
+# --- Helper Functions ---
+def save_uploaded_files(uploaded_files, target_dir="uploads"):
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
+    paths = []
+    for uploaded_file in uploaded_files:
+        file_path = os.path.join(target_dir, uploaded_file.name)
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        paths.append(file_path)
+    return paths, target_dir
+
+def reset_env():
+    """Clears the sandbox and session state, and KILLS the persistent Docker container."""
+    # 1. Kill Container
+    try:
+        import subprocess
+        subprocess.run(["docker", "rm", "-f", "pwngpt-session"], capture_output=True)
+    except Exception as e:
+        print(f"Failed to kill docker: {e}")
