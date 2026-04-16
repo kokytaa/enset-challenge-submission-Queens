@@ -94,3 +94,53 @@ class PwnGPTBrain:
                     raise e
                     
         raise Exception("Max retries exceeded")
+    def _build_graph(self):
+        workflow = StateGraph(AgentState)
+
+        workflow.add_node("observe", self.observe_node)
+        workflow.add_node("expert_consensus", self.expert_consensus_node)
+        workflow.add_node("reason", self.reason_node)
+        workflow.add_node("act", self.act_node)
+        workflow.add_node("verify", self.verify_node)
+
+        workflow.set_entry_point("observe")
+
+        workflow.add_edge("observe", "expert_consensus")
+        workflow.add_edge("expert_consensus", "reason")
+        workflow.add_edge("reason", "act")
+        
+        # Conditional edge from act - verification is always next
+        workflow.add_edge("act", "verify")
+        
+        workflow.add_conditional_edges(
+            "verify",
+            self.check_success
+        )
+
+        return workflow.compile()
+
+    def observe_node(self, state: AgentState):
+        """
+        Analyze initial inputs and files.
+        """
+        # Pass-through if we are resuming an approved action or if we already observed
+        if state.get('approval_status') == "GRANTED":
+            return state
+            
+        # Check if we already have an observation in history to prevent loops on restart
+        if any("Observing challenge" in msg for msg in state.get('messages', [])):
+             return state
+
+        msg = f"Observing challenge: {state['challenge_name']}"
+        state['messages'].append(msg)
+        state['current_step'] = "Observation"
+        
+        if state['files']:
+            file_names = [os.path.basename(f) for f in state['files']]
+            insp = self.toolkit.inspect_file(file_names[0])
+            state['tool_output'] = f"Files available: {file_names}\nPreview of {file_names[0]}:\n{insp}"
+        else:
+             state['tool_output'] = "No files provided. Relying on description."
+        
+        return state
+    
