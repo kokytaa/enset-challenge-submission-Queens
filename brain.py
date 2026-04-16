@@ -314,3 +314,140 @@ class PwnGPTBrain:
              state['current_action'] = {"action": "finish", "argument": f"Error in reasoning: {str(e)}"}
         
         return state
+    def act_node(self, state: AgentState):
+        """
+        Execute the decided action, WITH Security Checks.
+        """
+        state['current_step'] = "Acting"
+        action_data = state.get('current_action', {})
+        action_type = action_data.get('action')
+        argument = action_data.get('argument')
+
+        # Check for approval usage
+        if state.get('approval_status') == "DENIED":
+            state['tool_output'] = "Action denied by user. Halting."
+            state['messages'].append("⚠️ Action was denied by user. Stopping.")
+            state['approval_status'] = "NONE"
+            return state
+
+        # If we are resuming from a GRANTED state, execute immediately
+        # If not, checks Guardian first.
+
+        if action_type == "command":
+            from toolkit import Guardian
+            risk = Guardian.check_command(argument)
+            
+            if risk == "BLOCKED":
+                state['tool_output'] = "SECURITY VIOLATION: Command blocked by Guardian."
+                state['messages'].append(f"⛔ Blocked dangerous command: {argument}")
+                return state
+                
+            if risk == "HIGH_RISK" and state.get('approval_status') != "GRANTED":
+                # Pause for approval
+                state['approval_status'] = "REQUESTED"
+                state['messages'].append(f"✋ Requesting approval for high-risk command: {argument}")
+                return state
+
+            # Execute
+            result = self.toolkit.run_command(argument)
+            state['tool_output'] = f"Command '{argument}' Output:\n{result}"
+            state['messages'].append(f"Ran command: {argument}")
+            state['approval_status'] = "NONE" # Reset
+        
+        elif action_type == "web":
+            result = self.toolkit.scrape_web(argument)
+            state['tool_output'] = f"Web Scrape '{argument}' Output:\n{result}"
+            state['messages'].append(f"Scraped URL: {argument}")
+            
+        elif action_type == "screenshot":
+            result_path = self.toolkit.web_eye.take_screenshot(argument)
+            if result_path.endswith(".png"):
+                state['tool_output'] = f"[SCREENSHOT]: {result_path}"
+                state['messages'].append(f"📸 Screenshot taken: {argument}")
+            else:
+                state['tool_output'] = f"Screenshot Failed: {result_path}"
+                state['messages'].append(f"Example Error: {result_path}")
+        
+        elif action_type == "finish":
+            state['tool_output'] = "Agent decided to finish."
+            state['messages'].append("Agent signaling completion.")
+            
+        else:
+            state['tool_output'] = f"Unknown action: {action_type}"
+            state['messages'].append(f"Skipping unknown action: {action_type}")
+        
+        return state
+
+    def verify_node(self, state: AgentState):
+        """
+        Check if we found the flag in the output based on custom format.
+        """
+        # If we are waiting for approval, do NOT run verification or continue
+        if state.get('approval_status') == "REQUESTED":
+             return state
+
+        state['current_step'] = "Verification"
+        full_output = state['tool_output']
+        
+        # Split to ignore the "Command '...' Output:" header if present
+        # logic matches format in act_node: f"Command '{argument}' Output:\n{result}"
+        if "Output:\n" in full_output:
+            _, command_output = full_output.split("Output:\n", 1)
+        else:
+            command_output = full_output
+
+        flag_fmt = state.get('flag_format', 'CTF{')
+        
+        # If user explicitly wrote "Unknown", we try generic patterns
+        if flag_fmt.lower() == "unknown":
+            # Generic CTF patterns: CTF{...}, flag{...}, KEY{...}, or just long strings inside braces
+            generic_patterns = [r"CTF\{.*?\}", r"flag\{.*?\}", r"key\{.*?\}", r"IDEH\{.*?\}"]
+            for pat in generic_patterns:
+                match = re.search(pat, command_output, re.IGNORECASE)
+                if match:
+                    state['flag_found'] = match.group(0)
+                    state['messages'].append(f"SUCCESS: Flag found (generic) -> {match.group(0)}")
+                    return state
+            return state
+
+        # Simple heuristic check for specific format
+        if flag_fmt in command_output:
+            # Escape the format for regex safety
+            fmt_esc = re.escape(flag_fmt)
+            # Try to grab content until closing brace '}' if present
+            # We use non-greedy matching but allow characters inside
+            pattern = fmt_esc + r".{1,100}?\}" 
+            match = re.search(pattern, command_output)
+            if match:
+                state['flag_found'] = match.group(0)
+                state['messages'].append(f"SUCCESS: Flag found -> {match.group(0)}")
+                return state
+
+        # Base64 Decoding Check
+        # Look for potential base64 strings
+        # Heuristic: continuous alphanum+/ string of len >= 20 (just to catch likely encoded flags)
+        # Note: flags can be short, but base64 usually makes them longer.
+        # Let's try scanning for anything looking like text encoded in base64.
+        
+        candidates = re.findall(r'[A-Za-z0-9+/=]{20,}', command_output)
+        for cand in candidates:
+            try:
+                decoded_bytes = base64.b64decode(cand)
+                decoded_str = decoded_bytes.decode('utf-8', errors='ignore')
+                
+                # Check for format in decoded string
+                if flag_fmt in decoded_str:
+                    # Found it!
+                     fmt_esc = re.escape(flag_fmt)
+                     pattern = fmt_esc + r".{1,100}?\}"
+                     match = re.search(pattern, decoded_str)
+                     if match:
+                         state['flag_found'] = match.group(0)
+                         state['messages'].append(f"SUCCESS: Flag found (Base64 Decoded from '{cand}') -> {match.group(0)}")
+                         return state
+                         
+            except Exception:
+                # Not valid base64 or failed decode
+                continue
+        
+        return state
