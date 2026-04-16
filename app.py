@@ -361,3 +361,42 @@ if st.session_state.waiting_for_approval:
             st.session_state.current_graph_state['approval_status'] = "DENIED"
             st.session_state.waiting_for_approval = False
             st.rerun()
+    # --- Success & Feedback Loop ---
+if st.session_state.flag:
+    st.markdown(f"""
+    <div class="success-box">
+        🚩 POTENTIAL FLAG DETECTED: {st.session_state.flag}
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.info("Please verify if this is the correct flag.")
+    
+    col_confirm, col_reject = st.columns(2)
+    
+    with col_confirm:
+        if st.button("✅ Confirm & Generate Write-up", type="primary"):
+            with st.spinner("Generating Write-up..."):
+                # Get the brain instance again (or we could cache it if it wasn't stateless per step)
+                # We need the state
+                upload_dir_path = SANDBOX_PATH
+                brain = PwnGPTBrain(upload_dir=upload_dir_path)
+                writeup = brain.generate_writeup(st.session_state.current_graph_state)
+                
+                st.markdown("## 📝 CTF Write-up")
+                st.markdown(writeup)
+                st.balloons()
+    
+    with col_reject:
+        if st.button("❌ Incorrect - Keep Searching"):
+            # Resume logic
+            # 1. Append user feedback to messages
+            st.session_state.current_graph_state['messages'].append(
+                f"User Feedback: The flag '{st.session_state.flag}' is INCORRECT. Disregard it and continue searching."
+            )
+            # 2. Clear flag found
+            st.session_state.current_graph_state['flag_found'] = None
+            st.session_state.flag = None
+            
+            # 3. Resume running
+            st.session_state.running = True
+            st.rerun()
