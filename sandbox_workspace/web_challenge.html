@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Web Intrusion 101 - CTF Challenge</title>
+    <!-- CTF{n0t_1n_th3_t1tl3} - Too easy! Keep looking... -->
+    <style>
+        body {
+            background: #0a0a0a;
+            color: #00ff00;
+            font-family: monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h1 { color: #ff0000; }
+        input {
+            background: #111;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 8px;
+            font-family: monospace;
+            width: 300px;
+        }
+        button {
+            background: #003300;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-family: monospace;
+            margin-top: 8px;
+        }
+        #result { margin-top: 16px; font-size: 1.2em; }
+    </style>
+</head>
+<body>
+
+<h1>🔐 Web Intrusion 101</h1>
+<p>Find the hidden flag and enter it below.</p>
+<p style="color:#555"><!-- Hint: Check the source code carefully... --></p>
+
+<input type="text" id="flag-input" placeholder="CTF{...}" />
+<br>
+<button onclick="checkFlag()">Submit Flag</button>
+<div id="result"></div>
+
+<script>
+    // Flag is stored encoded to prevent easy access
+    // Encoding: base64(reverse(flag))
+    const encoded = "fX0wbDBfc3QzYzVfM2gxX24wX2I0YjN9RlRD";  // <-- encoded flag
+
+    function decode(str) {
+        // Step 1: base64 decode
+        let b64 = atob(str);
+        // Step 2: reverse the string
+        return b64.split('').reverse().join('');
+    }
+
+    function checkFlag() {
+        const userInput = document.getElementById('flag-input').value.trim();
+        const realFlag = decode(encoded);
+        const resultDiv = document.getElementById('result');
+
+        if (userInput === realFlag) {
+            resultDiv.style.color = '#00ff00';
+            resultDiv.textContent = '✅ Correct! You cracked it!';
+        } else {
+            resultDiv.style.color = '#ff0000';
+            resultDiv.textContent = '❌ Wrong flag. Keep digging...';
+        }
+    }
+
+    // Anti-cheat: disable right-click (easy to bypass!)
+    document.addEventListener('contextmenu', e => e.preventDefault());
+</script>
+
+<!--
+    HINT FOR THE PLAYER:
+    Sometimes the most obvious place to hide something
+    is right in front of your eyes.
+    
+    Maybe try: view-source, DevTools Console, or Network tab?
+    
+    The flag format is: CTF{...}
+-->
+
+</body>
+</html>
