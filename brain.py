@@ -20,7 +20,7 @@ import streamlit as st
 try:
     API_KEY = os.environ.get("GEMINI_API_KEY") or st.secrets["GEMINI_API_KEY"]
 except:
-    API_KEY = "AIzaSyBET8mG16P83ZHAzAZL5VY1T3kkVHjwlWY" # Placeholder
+    API_KEY = "AQ.Ab8RN6K2xDJ8vSoWhABtONvPGCPVj7h8j-8dDiyGnrvdu0fBKQ" # Placeholder
 
 if API_KEY == "YOUR_API_KEY_HERE":
     # Fallback for local testing if not set

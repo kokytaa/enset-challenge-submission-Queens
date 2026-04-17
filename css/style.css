@@ -1,164 +1,118 @@
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&display=swap');
-
-/* ===== GLOBAL ===== */
-:root {
-    --bg: #0b0f1a;
-    --bg2: #0d1b2a;
-    --accent: #00e5ff;
-    --accent2: #39ff14;
-    --text: #00e5ff;
-    --muted: #89b4fa;
-}
-
+/* Global Styles */
 body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Share Tech Mono', monospace;
+    background-color: #0e1117;
+    color: #a552be;
+    /* Cyber Green */
+    font-family: 'Courier New', Courier, monospace;
 }
 
-/* App background */
-.stApp {
-    background: linear-gradient(135deg, var(--bg) 0%, var(--bg2) 50%, #0f2044 100%);
+/* Headers */
+h1,
+h2,
+h3 {
+    color: #963a88 !important;
+    text-shadow: 0 0 5px #90388a;
 }
 
-/* ===== SIDEBAR (glass effect) ===== */
-section[data-testid="stSidebar"] {
-    background: rgba(13, 17, 23, 0.75);
-    backdrop-filter: blur(10px);
-    border-right: 1px solid rgba(0, 229, 255, 0.15);
-}
-
-/* ===== HEADERS ===== */
-h1, h2, h3 {
-    font-family: 'Orbitron', monospace !important;
-    color: var(--accent) !important;
-    text-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
-    letter-spacing: 2px;
-}
-
-/* ===== LABELS ===== */
-label {
-    color: var(--muted) !important;
-    font-size: 13px;
-    letter-spacing: 1px;
-}
-
-/* ===== INPUTS ===== */
-.stTextInput>div>div>input,
-.stTextArea>div>div>textarea {
-    background: rgba(13, 17, 23, 0.9);
-    color: var(--accent);
-    border: 1px solid rgba(0, 229, 255, 0.25);
-    border-radius: 8px;
-    padding: 10px;
-    transition: all 0.25s ease;
-    font-family: 'Share Tech Mono', monospace;
+/* Streamlit Inputs */
+.stTextInput>div>div>input {
+    background-color: #000000;
+    color: hsl(304, 47%, 59%);
+    border: 1px solid hsl(304, 47%, 59%);
 }
 
 .stTextInput>div>div>input::placeholder,
 .stTextArea>div>div>textarea::placeholder {
-    color: rgba(0, 229, 255, 0.35);
+    color:  #000000; /* PAS GRIS */
+       
 
-/* ===== SELECTBOX ===== */
-.stSelectbox>div>div>div {
-    background: rgba(13, 17, 23, 0.9);
-    color: var(--accent);
-    border: 1px solid rgba(0, 229, 255, 0.25);
-    border-radius: 8px;
 }
 
-/* ===== BUTTONS ===== */
+/* Buttons */
 .stButton>button {
-    background: transparent;
-    color: var(--accent);
-    border: 1px solid var(--accent);
-    border-radius: 8px;
-    padding: 8px 14px;
+    background-color: #000000;
+    color:hsl(304, 47%, 59%);
+    border: 1px solid hsl(304, 47%, 59%);
     transition: all 0.3s ease;
-    font-family: 'Share Tech Mono', monospace;
-    letter-spacing: 1px;
-    position: relative;
-    overflow: hidden;
 }
 
 .stButton>button:hover {
-    background: var(--accent);
-    color: var(--bg);
-    box-shadow: 0 0 18px rgba(0, 229, 255, 0.6);
-    transform: translateY(-2px);
+    background-color: hsl(304, 47%, 59%);
+    color: #000000;
+    box-shadow: 0 0 10px hsl(304, 47%, 59%);
 }
 
-/* Primary button */
-.stButton>button[kind="primary"] {
-    border-color: var(--accent2);
-    color: var(--accent2);
-}
-
-.stButton>button[kind="primary"]:hover {
-    background: var(--accent2);
-    color: var(--bg);
-    box-shadow: 0 0 18px rgba(57, 255, 20, 0.5);
-}
-
-/* ===== DIVIDER ===== */
-hr {
-    border: none;
-    height: 1px;
-    background: linear-gradient(to right, transparent, rgba(0,229,255,0.3), transparent);
-}
-
-/* ===== ALERT BOX ===== */
-.stAlert {
-    background: rgba(13, 27, 42, 0.7);
-    border-left: 3px solid var(--accent);
-    border-radius: 6px;
-    color: var(--text);
-    backdrop-filter: blur(6px);
-}
-
-/* ===== CONSOLE ===== */
+/* Console Output */
 .console-box {
-    background: rgba(9, 13, 20, 0.95);
-    border: 1px solid rgba(0, 229, 255, 0.25);
-    border-left: 3px solid #00e5ff;
-    border-radius: 10px;
-    padding: 16px;
-    font-size: 13px;
+    background-color: #1e1e1e;
+    /* Slightly lighter dark for contrast */
+    border: 1px solid hsl(304, 47%, 59%);
+    padding: 15px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+    color: #d4d4d4;
+    /* Default text color */
     white-space: pre-wrap;
     max-height: 500px;
     overflow-y: auto;
-    box-shadow: 0 0 25px rgba(0, 229, 255, 0.08);
-    font-family: 'Share Tech Mono', monospace;
-    line-height: 1.6;
+    line-height: 1.5;
 }
 
-/* ===== TEXT COLORS (IMPORTANT) ===== */
-.console-box .info {
-    color: #00e5ff; /* cyan */
+.log-thought {
+    color: #569cd6;
+    font-style: italic;
 }
 
-.console-box .success {
-    color: #39ff14; /* green hacker */
+/* Blue for thoughts */
+.log-command {
+    color: #ce9178;
+    font-weight: bold;
 }
 
-.console-box .warning {
-    color: #ffcc00; /* yellow */
+/* Orange/Red for commands */
+.log-obs {
+    color: #c586c0;
 }
 
-.console-box .error {
-    color: #ff4d4d; /* red */
+/* Purple for Observation */
+.log-success {
+    color: #4ec9b0;
 }
 
-.console-box .muted {
-    color: #aab2c0; /* soft gray */
+/* Teal/Green for success */
+.log-warning {
+    color: #dcdcaa;
 }
 
-/* ===== SMALL ANIMATIONS ===== */
-.stApp {
-    animation: fadeIn 0.6s ease-in-out;
+/* Yellow for warnings */
+.log-error {
+    color: #f44747;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.99); }
-    to { opacity: 1; transform: scale(1); }
-}}
+/* Red for errors */
+
+
+/* Success Message */
+.success-box {
+    border: 2px solid #00ff41;
+    padding: 20px;
+    text-align: center;
+    font-size: 24px;
+    color: #00ff41;
+    box-shadow: 0 0 20px #00ff41;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
